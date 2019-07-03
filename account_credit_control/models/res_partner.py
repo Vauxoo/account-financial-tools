@@ -21,10 +21,10 @@ class ResPartner(models.Model):
              "invoice. If nothing is defined, it will use "
              "the company setting.",
     )
-    credit_control_line_ids = fields.One2many('credit.control.line',
-                                              'invoice_id',
-                                              string='Credit Control Lines',
-                                              readonly=True)
+    credit_control_count = fields.Integer(
+        compute='_compute_credit_control_count',
+        string='# of Credit Control Lines',
+    )
     payment_responsible_id = fields.Many2one(
         comodel_name='res.users',
         ondelete='set null',
@@ -49,16 +49,28 @@ class ResPartner(models.Model):
     )
     manual_followup = fields.Boolean()
 
+    def _compute_credit_control_count(self):
+        partners = self.filtered(lambda x: not x.parent_id)
+        fetch_data = self.env['credit.control.line'].read_group(
+            domain=[('partner_id', 'in', partners.ids)],
+            fields=['partner_id'],
+            groupby=['partner_id'],
+        )
+        result = {data['partner_id'][0]: data['partner_id_count']
+                  for data in fetch_data}
+        for partner in self:
+            partner.credit_control_count = result.get(partner.id, 0)
+
     @api.constrains('credit_policy_id', 'property_account_receivable_id')
     def _check_credit_policy(self):
         """ Ensure that policy on partner are limited to the account policy """
         # sudo needed for those w/o permission that duplicate records
-        for partner in self.sudo():
+        for partner in self:
             if (not partner.property_account_receivable_id or
-                    not partner.credit_policy_id):
+                    not partner.sudo().credit_policy_id):
                 continue
             account = partner.property_account_receivable_id
-            policy = partner.credit_policy_id
+            policy = partner.sudo().credit_policy_id
             try:
                 policy.check_policy_against_account(account)
             except UserError as err:

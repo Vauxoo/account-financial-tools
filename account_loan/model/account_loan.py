@@ -13,7 +13,7 @@ _logger = logging.getLogger(__name__)
 try:
     import numpy
 except (ImportError, IOError) as err:
-    _logger.error(err)
+    _logger.debug(err)
 
 
 class AccountLoan(models.Model):
@@ -241,6 +241,10 @@ class AccountLoan(models.Model):
         string='Total interests payed',
         compute='_compute_total_amounts',
     )
+    post_invoice = fields.Boolean(
+        default=True,
+        help='Invoices will be posted automatically'
+    )
 
     _sql_constraints = [
         ('name_uniq', 'unique(name, company_id)',
@@ -273,7 +277,7 @@ class AccountLoan(models.Model):
         for record in self:
             if record.loan_type == 'fixed-annuity':
                 record.fixed_amount = - record.currency_id.round(numpy.pmt(
-                    record.rate_period / 100,
+                    record.loan_rate() / 100,
                     record.fixed_periods,
                     record.fixed_loan_amount,
                     -record.residual_amount
@@ -304,8 +308,12 @@ class AccountLoan(models.Model):
     @api.depends('rate', 'method_period', 'rate_type')
     def _compute_rate_period(self):
         for record in self:
-            record.rate_period = record.compute_rate(
-                record.rate, record.rate_type, record.method_period)
+            record.rate_period = record.loan_rate()
+
+    def loan_rate(self):
+        return self.compute_rate(
+            self.rate, self.rate_type, self.method_period
+        )
 
     @api.depends('journal_id', 'company_id')
     def _compute_currency(self):
@@ -386,6 +394,8 @@ class AccountLoan(models.Model):
         """
         lines = self.line_ids.filtered(lambda r: not r.move_ids)
         amount = 0
+        if not lines:
+            return
         final_sequence = min(lines.mapped('sequence'))
         for line in lines.sorted('sequence', reverse=True):
             date = datetime.strptime(
