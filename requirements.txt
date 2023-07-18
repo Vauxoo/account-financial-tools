@@ -2,4 +2,4 @@
 numpy
 numpy-financial<=1.0.0
 python-dateutil
-vatnumber
+vatnumber<=1.0
