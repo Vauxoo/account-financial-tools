@@ -42,7 +42,7 @@ class AccountMoveTemplate(models.Model):
 
     def copy(self, default=None):
         self.ensure_one()
-        default = dict(default or {}, name=_("%s (copy)") % self.name)
+        default = dict(default or {}, name=_("%s (copy)", self.name))
         return super().copy(default)
 
     def eval_computed_line(self, line, sequence2amount):
@@ -223,6 +223,5 @@ class AccountMoveTemplateLine(models.Model):
         for line in self:
             if line.type == "computed" and not line.python_code:
                 raise ValidationError(
-                    _("Python Code must be set for computed line with sequence %d.")
-                    % line.sequence
+                    _("Python Code must be set for computed line with sequence %d.", line.sequence)
                 )

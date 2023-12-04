@@ -126,9 +126,7 @@ Valid dictionary to overwrite template lines:
             if dict(
                 filter(lambda x: set(overwrite_vals[x].keys()) - set(valid_keys), keys)
             ):
-                raise ValidationError(
-                    _("Valid fields to overwrite are %s") % valid_keys
-                )
+                raise ValidationError(_("Valid fields to overwrite are %s", valid_keys))
         except ValidationError as e:
             raise e
         except Exception as e:
@@ -172,7 +170,7 @@ Valid dictionary to overwrite template lines:
             sequence2amount[wizard_line.sequence] = wizard_line.amount
         company_cur = self.company_id.currency_id
         self.template_id.compute_lines(sequence2amount)
-        if all([company_cur.is_zero(x) for x in sequence2amount.values()]):
+        if all(company_cur.is_zero(x) for x in sequence2amount.values()):
             raise UserError(_("Debit and credit of all lines are null."))
         move_vals = self._prepare_move()
         for line in self.template_id.line_ids:
@@ -187,7 +185,7 @@ Valid dictionary to overwrite template lines:
         )
         result.update(
             {
-                "name": _("Entry from template %s") % self.template_id.name,
+                "name": _("Entry from template %s", self.template_id.name),
                 "res_id": move.id,
                 "views": False,
                 "view_id": False,

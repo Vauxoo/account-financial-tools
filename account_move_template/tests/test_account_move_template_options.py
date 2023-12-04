@@ -80,9 +80,9 @@ class TestAccountMoveTemplateEnhanced(TransactionCase):
 
     def test_move_template_normal(self):
         """Test normal case, input amount 300"""
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-        template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+        template_run = form.save()
         template_run.load_lines()
         template_run.line_ids[0].amount = 300
         res = template_run.generate_move()
@@ -106,9 +106,9 @@ class TestAccountMoveTemplateEnhanced(TransactionCase):
 
     def test_move_template_optional(self):
         """Test optional case, input amount -300, expect optional account"""
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-        template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+        template_run = form.save()
         template_run.load_lines()
         template_run.line_ids[0].amount = -300  # Negative amount
         res = template_run.generate_move()
@@ -133,9 +133,9 @@ class TestAccountMoveTemplateEnhanced(TransactionCase):
     def test_move_template_overwrite(self):
         """Test case overwrite, amount = 3000, no need to manual input"""
         # Test for error when debit is not a valid field
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            f.overwrite = str(
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            form.overwrite = str(
                 {
                     "L0": {
                         "partner_id": self.partners[0].id,
@@ -144,21 +144,21 @@ class TestAccountMoveTemplateEnhanced(TransactionCase):
                     },
                 }
             )
-        template_run = f.save()
+        template_run = form.save()
         msg_error = "overwrite are .'partner_id', 'amount', 'name', 'date_maturity'"
         with self.assertRaisesRegex(ValidationError, msg_error):
             template_run.load_lines()
         # Assign only on valid fields, and load_lines again
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            f.overwrite = str(
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            form.overwrite = str(
                 {
                     "L0": {"partner_id": self.partners[0].id, "amount": 3000},
                     "L1": {"partner_id": self.partners[1].id},
                     "L2": {"partner_id": self.partners[2].id},
                 }
             )
-        template_run = f.save()
+        template_run = form.save()
         res = template_run.load_lines()
         self.assertEqual(template_run.line_ids[0].partner_id, self.partners[0])
         self.assertEqual(template_run.line_ids[0].amount, 3000)
@@ -204,68 +204,68 @@ class TestAccountMoveTemplateEnhanced(TransactionCase):
             self.move_template.line_ids[1].python_code = ""
 
         self.move_template.line_ids[1].python_code = "P0*1/3"
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            template_run = form.save()
         template_run.load_lines()
         msg_error = "really exists and have a lower sequence than the current line."
         with self.assertRaisesRegex(UserError, msg_error):
             template_run.generate_move()
 
         self.move_template.line_ids[1].python_code = "L0*"
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            template_run = form.save()
         template_run.load_lines()
         msg_error = "the syntax of the formula is wrong."
         with self.assertRaisesRegex(UserError, msg_error):
             template_run.generate_move()
 
         self.move_template.line_ids[1].python_code = "L0*1/3"
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            template_run = form.save()
         template_run.load_lines()
         template_run.line_ids[0].amount = 0
         msg_error = "Debit and credit of all lines are null."
         with self.assertRaisesRegex(UserError, msg_error):
             template_run.generate_move()
 
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            f.overwrite = []
-            template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            form.overwrite = []
+            template_run = form.save()
         msg_error = "Overwrite value must be a valid python dict"
         with self.assertRaisesRegex(ValidationError, msg_error):
             template_run.load_lines()
 
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            f.overwrite = str({"P0": {"amount": 100}})
-            template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            form.overwrite = str({"P0": {"amount": 100}})
+            template_run = form.save()
         msg_error = "Keys must be line sequence, i..e, L1, L2, ..."
         with self.assertRaisesRegex(ValidationError, msg_error):
             template_run.load_lines()
 
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            f.overwrite = str({"L0": []})
-            template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            form.overwrite = str({"L0": []})
+            template_run = form.save()
         msg_error = "Invalid dictionary: 'list' object has no attribute 'keys'"
         with self.assertRaisesRegex(ValidationError, msg_error):
             template_run.load_lines()
 
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            f.overwrite = str({"L0": {"test": 100}})
-            template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            form.overwrite = str({"L0": {"test": 100}})
+            template_run = form.save()
         msg_error = "overwrite are .'partner_id', 'amount', 'name', 'date_maturity'"
         with self.assertRaisesRegex(ValidationError, msg_error):
             template_run.load_lines()
 
-        with Form(self.env["account.move.template.run"]) as f:
-            f.template_id = self.move_template
-            template_run = f.save()
+        with Form(self.env["account.move.template.run"]) as form:
+            form.template_id = self.move_template
+            template_run = form.save()
         template_run.line_ids.unlink()
         msg_error = "You deleted a line in the wizard. This is not allowed:"
         with self.assertRaisesRegex(UserError, msg_error):
